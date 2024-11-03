@@ -49,7 +49,7 @@ MAX_EPOCHS = 200
 results = []
 i = 0
 
-NUM_RUNS = 2
+NUM_RUNS = 2000
 
 for i in range(NUM_RUNS):
     
