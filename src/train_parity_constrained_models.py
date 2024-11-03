@@ -37,8 +37,9 @@ data = load_stroke_data(DATA_PATH)
 
 rs = np.random.RandomState(7)
 
-#mmd_alphas = [0, 0, 0, 0, 1, 1, 1, 10, 10, 10, 100, 100, 1000, 10000]# + list(np.logspace(0, 4, 9))
-mmd_alphas = [0, 0]
+mmd_alphas = [
+    0, 0, 0, 0, 1, 1, 1, 10, 10, 10, 100, 100, 1000, 10000
+]# + list(np.logspace(0, 4, 9))
 l2_alphas = np.logspace(-5, 0, 100)
 es_vals = [1, 2, 3]
 learning_rates = np.logspace(-4, -1, 100)
