@@ -34,10 +34,15 @@ class Fair_DTFT(Model):
         self.encoder_layers = [self.dense(ls) for ls in encoder_layer_sizes]
         self.decoder_layers = [self.dense(ls) for ls in decoder_layer_sizes]
 
-        self.prediction_head = [
-            self.dense(self.n_bins + 1, activation='softmax')
-            for i in range(n_event_types)
-        ]
+        # self.prediction_head = [
+        #     self.dense(self.n_bins + 1, activation='softmax')
+        #     for i in range(n_event_types)
+        # ]
+
+        self.prediction_head = self.dense(
+            self.n_bins * n_event_types + 1,
+            activation='softmax'
+        )
         
         self.encoder = Sequential(self.encoder_layers)
         self.decoder = Sequential(self.decoder_layers)
@@ -63,9 +68,14 @@ class Fair_DTFT(Model):
         self.representation = self.encoder(x)
         self.features = self.decoder(self.representation)
 
-        self.t_pred = tf.stack(
-            [ph(self.features) for ph in self.prediction_head],
-            axis=-1
+        # self.t_pred = tf.stack(
+        #     [ph(self.features) for ph in self.prediction_head],
+        #     axis=-1
+        # )
+
+        self.t_pred = tf.reshape(
+            self.prediction_head(self.features)[:, :-1],
+            (-1, self.n_bins, self.n_event_types)
         )
         
         return self.t_pred
@@ -80,9 +90,16 @@ class Fair_DTFT(Model):
 
 
     def predict_survival_function(self, x, t):
-        y_complete_bins = get_proportion_of_bins_completed(np.ones(len(x)) * t, self.bins)
-        return 1 - tf.reduce_sum(y_complete_bins * self.forward_pass(x)[:, :-1], axis=1)
 
+        y_complete_bins = get_proportion_of_bins_completed(
+            np.ones(len(x)) * t, self.bins
+        )
+
+        return 1 - tf.reduce_sum(
+            y_complete_bins[:, :, tf.newaxis] * self.forward_pass(x),
+            axis=[1, 2]
+        )
+        
     
     def loss(self, x, t, s, mmd_binary_variable):
 
@@ -112,10 +129,10 @@ class Fair_DTFT(Model):
 
         t_pred = self.forward_pass(x)
 
-        ft = tf.reduce_sum(yt * t_pred[:, :-1, :], axis=1) + self.tol
+        ft = tf.reduce_sum(yt[:, :, tf.newaxis] * t_pred, axis=1) + self.tol
         
         Ft = 1 - tf.reduce_sum(
-            y_complete_bins * t_pred[:, :-1, :],
+            y_complete_bins[:, :, tf.newaxis] * t_pred,
             axis=[1, 2]
         )[:, tf.newaxis] + self.tol
 
@@ -205,7 +222,12 @@ def train_model(
 
         for batch_idx, (xt, tt, st, mbvt) in enumerate(get_batches(*train_data, batch_size=batch_size)):
 
+            #print(model(xt))
+
             train_loss, train_nll = train_step(xt, tt, st, mbvt)
+
+            #print(train_loss)
+            #print(train_nll)
 
             train_losses.append(train_loss)
             train_nlls.append(train_nll)
