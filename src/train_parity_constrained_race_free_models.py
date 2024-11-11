@@ -11,7 +11,7 @@ tf.random.set_seed(2021)
 
 import sys, os
 
-from models import Fair_DTFT, train_model
+from model import Fair_DTFT, train_model
 from evaluation import evaluate_all
 
 # SET RESULTS FOLDER
