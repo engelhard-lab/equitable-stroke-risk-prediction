@@ -36,26 +36,22 @@ def main():
     calculate_performance_measures(
         data,
         os.path.join(RESULTS_DIR, 'cox_baselines'),
-        'Cox'
     )
 
     calculate_performance_measures(
         data,
         os.path.join(RESULTS_DIR, 'cox_baselines_race_free'),
-        'Cox'
     )
 
     calculate_performance_measures(
         data,
         os.path.join(RESULTS_DIR, 'parity_constrained_race_free'),
-        'NN',
         limit=10
     )
 
     calculate_performance_measures(
         data,
         os.path.join(RESULTS_DIR, 'parity_constrained'),
-        'NN',
         limit=10
     )
 
