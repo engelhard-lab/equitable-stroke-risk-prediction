@@ -4,7 +4,6 @@
 import sys, os
 import warnings
 
-from evaluation import one_calibration
 from load_stroke_data import load_stroke_data
 
 from sksurv.metrics import brier_score, concordance_index_ipcw
@@ -19,31 +18,218 @@ from tte_measures import xCI, xAUCt, xROCt, ipc_weights
 
 DATA_PATH = '../data/stroke_risk_ads_v5i_comprisk.csv'
 
-# Load data (needed to calculate performance)
+def main():
 
-data = load_stroke_data(DATA_PATH)
+    # Load data (needed to calculate performance)
 
-# Load results summary files
+    data = load_stroke_data(DATA_PATH)
 
-RESULTS_DIR = '../results/aim_revision'
+    # Load results summary files
 
-df = pd.read_csv(
-    os.path.join(RESULTS_DIR, 'mmd_race_tuning.csv')
-).drop('Unnamed: 0', axis=1)
+    RESULTS_DIR = '../results/aim_revision'
 
-bldf = pd.read_csv(
-    os.path.join(RESULTS_DIR, 'cox_baselines/cox_baselines.csv')
-).drop('Unnamed: 0', axis=1)
+    df = pd.read_csv(
+        os.path.join(RESULTS_DIR, 'mmd_race_tuning.csv')
+    ).drop('Unnamed: 0', axis=1)
 
-df_nr = pd.read_csv(
-    os.path.join(RESULTS_DIR, 'race_free/mmd_race_tuning.csv')
-).drop('Unnamed: 0', axis=1)
+    bldf = pd.read_csv(
+        os.path.join(RESULTS_DIR, 'cox_baselines/cox_baselines.csv')
+    ).drop('Unnamed: 0', axis=1)
 
-bldf_nr = pd.read_csv(
-    os.path.join(RESULTS_DIR, 'cox_baselines_race_free/cox_baselines.csv')
-).drop('Unnamed: 0', axis=1)
+    df_nr = pd.read_csv(
+        os.path.join(RESULTS_DIR, 'race_free/mmd_race_tuning.csv')
+    ).drop('Unnamed: 0', axis=1)
+
+    bldf_nr = pd.read_csv(
+        os.path.join(RESULTS_DIR, 'cox_baselines_race_free/cox_baselines.csv')
+    ).drop('Unnamed: 0', axis=1)
+
+    # # Evaluate Cox Model with race as a predictor and save results
+
+    baseline_results_df = []
+    current_results_path = os.path.join(RESULTS_DIR, 'cox_baselines')
+
+    for i in range(len(bldf)):
+        for part in ['val', 'test', 'regards']:
+            bl_dict = {
+                'idx': i,
+                'part': part,
+                'lambda_l2': bldf['lambda_l2'][i],
+                **eval_by_run_idx(
+                    i,
+                    current_results_path,
+                    run_prefix='cox_',
+                    part=part
+                )
+            }
+            baseline_results_df.append(bl_dict)
+            
+    pd.DataFrame(baseline_results_df).to_csv(
+        os.path.join(current_results_path, 'cox_performance_summary.csv'),
+        index=False)
+
+    # # Evaluate Cox models without race as a predictor and save results
+
+    baseline_results_norace_df = []
+    current_results_path = os.path.join(RESULTS_DIR, 'cox_baselines_race_free')
+
+    for i in range(len(bldf_nr)):
+        for part in ['val', 'test', 'regards']:
+            bl_dict = {
+                'idx': i,
+                'part': part,
+                'lambda_l2': bldf_nr['lambda_l2'][i],
+                **eval_by_run_idx(
+                    i, current_results_path, run_prefix='cox_', part=part
+                )
+            }
+            baseline_results_norace_df.append(bl_dict)
+            
+    pd.DataFrame(baseline_results_norace_df).to_csv(
+        os.path.join(current_results_path, 'cox_performance_summary.csv'),
+        index=False)
+
+    # # Evaluate our NN-based models and save results
+
+    model_results_df = []
+    current_results_path = RESULTS_DIR
+
+    start_i = 0
+
+    for i in range(start_i, len(df)):
+        print('Calculating for model %i' % i, end='\r')
+        for part in ['val', 'test', 'regards']:
+            bl_dict = {
+                'idx': i,
+                'part': part,
+                'lambda_mmd': df['lambda_mmd'][i],
+                'lambda_l2': df['lambda_l2'][i],
+                'early_stopping_criterion': df['early_stopping_criterion'][i],
+                'learning_rate': df['learning_rate'][i],
+                'num_epochs': df['num_epochs'][i],
+                'train_loss': df['train_loss'][i],
+                'train_nll': df['train_nll'][i],
+                'val_loss': df['val_loss'][i],
+                'val_nll': df['val_nll'][i],
+                **eval_by_run_idx(
+                    i, RESULTS_DIR, part=part
+                )
+            }
+            print('Model %i (%s) IPCW CI (all) is %.3f' % (i, part, bl_dict['ci_ipcw_10_all']))
+            model_results_df.append(bl_dict)
+            
+    pd.DataFrame(model_results_df).to_csv(
+        os.path.join(RESULTS_DIR, 'model_performance_summary.csv'),
+        index=False)
+
+    # # Evaluate NN-based models without race as a predictor and save results
+
+    model_results_norace_df = []
+    current_results_path = os.path.join(RESULTS_DIR, 'race_free')
+
+    start_i = 0
+
+    for i in range(start_i, len(df_nr)):
+        print('Calculating for model %i' % i, end='\r')
+        for part in ['val', 'test', 'regards']:
+            bl_dict = {
+                'idx': i,
+                'part': part,
+                'lambda_mmd': df_nr['lambda_mmd'][i],
+                'lambda_l2': df_nr['lambda_l2'][i],
+                'early_stopping_criterion': df_nr['early_stopping_criterion'][i],
+                'learning_rate': df_nr['learning_rate'][i],
+                'num_epochs': df_nr['num_epochs'][i],
+                'train_loss': df_nr['train_loss'][i],
+                'train_nll': df_nr['train_nll'][i],
+                'val_loss': df_nr['val_loss'][i],
+                'val_nll': df_nr['val_nll'][i],
+                **eval_by_run_idx(
+                    i, RESULTS_DIR_NORACE, part=part
+                )
+            }
+            print('Model %i (%s) IPCW CI (all) is %.3f' % (i, part, bl_dict['ci_ipcw_10_all']))
+            model_results_norace_df.append(bl_dict)
+            
+    pd.DataFrame(model_results_norace_df).to_csv(
+        os.path.join(current_results_path, 'model_performance_summary.csv'),
+        index=False)
+
 
 # Define functions to evaluate performance
+
+from evaluation import KaplanMeier
+from scipy.stats import chi2
+
+def one_calibration(s_test, t_test, surv, times, n_cal_bins=10, return_curves=False):
+
+    N_times = len(times)
+    N_pred = len(surv)
+
+    assert N_times == N_pred
+    assert N_times > 0
+
+    hs_stats = []
+    p_vals = []
+    
+    op = []
+    ep = []
+
+    for s, time in zip(surv, times):
+
+        #try:
+            
+        predictions = 1 - s
+
+        prediction_order = np.argsort(-predictions)
+        predictions = predictions[prediction_order]
+        event_times = t_test.copy()[prediction_order]
+        event_indicators = (s_test == 1).copy()[prediction_order]
+
+        # Can't do np.mean since split array may be of different sizes.
+        binned_event_times = np.array_split(event_times, n_cal_bins)
+        binned_event_indicators = np.array_split(event_indicators, n_cal_bins)
+        probability_means = [np.mean(x) for x in np.array_split(predictions, n_cal_bins)]
+
+        hosmer_lemeshow = 0
+
+        observed_probabilities = []
+        expected_probabilities = []
+
+        for b in range(n_cal_bins):
+
+            prob = probability_means[b]
+
+            km_model = KaplanMeier(binned_event_times[b], binned_event_indicators[b])
+            event_probability = 1 - km_model.predict(time)
+            bin_count = len(binned_event_times[b])
+            
+            if prob >= 1.0:
+                warnings.warn(
+                    "One-Calibration is not well defined: the risk"
+                    f"probability of the {b}th bin was {prob}."
+                )
+                hosmer_lemeshow = np.nan
+            
+            else:
+                hosmer_lemeshow += (bin_count * event_probability - bin_count * prob) ** 2 / (
+                    bin_count * prob * (1 - prob)
+                )
+
+            observed_probabilities.append(event_probability)
+            expected_probabilities.append(prob)
+
+        hs_stats.append(hosmer_lemeshow)
+        p_vals.append(1 - chi2.cdf(hosmer_lemeshow, n_cal_bins - 1))
+
+        op.append(observed_probabilities)
+        ep.append(expected_probabilities)
+            
+    if return_curves:
+        return np.array(times), np.array(hs_stats), np.array(p_vals), np.array(op), np.array(ep)
+
+    return np.array(times), np.array(hs_stats), np.array(p_vals)
+
 
 def evaluate_run_performance(s_train, t_train, s_test, t_test, surv_10yr):
 
@@ -183,111 +369,5 @@ def eval_by_run_idx(idx, results_dir, run_prefix='', part='val', bootstrap_seed=
     return results
 
 
-baseline_results_df = []
-current_results_path = os.path.join(RESULTS_DIR, 'cox_baselines')
-
-for i in range(len(bldf)):
-    for part in ['val', 'test', 'regards']:
-        bl_dict = {
-            'idx': i,
-            'part': part,
-            'lambda_l2': bldf['lambda_l2'][i],
-            **eval_by_run_idx(
-                i,
-                current_results_path,
-                run_prefix='cox_',
-                part=part
-            )
-        }
-        baseline_results_df.append(bl_dict)
-        
-pd.DataFrame(baseline_results_df).to_csv(
-    os.path.join(current_results_path, 'cox_performance_summary.csv'),
-    index=False)
-
-# # Evaluate Cox models without race as a predictor and save results
-
-baseline_results_norace_df = []
-current_results_path = os.path.join(RESULTS_DIR, 'cox_baselines_race_free')
-
-for i in range(len(bldf_nr)):
-    for part in ['val', 'test', 'regards']:
-        bl_dict = {
-            'idx': i,
-            'part': part,
-            'lambda_l2': bldf_nr['lambda_l2'][i],
-            **eval_by_run_idx(
-                i, current_results_path, run_prefix='cox_', part=part
-            )
-        }
-        baseline_results_norace_df.append(bl_dict)
-        
-pd.DataFrame(baseline_results_norace_df).to_csv(
-    os.path.join(current_results_path, 'cox_performance_summary.csv'),
-    index=False)
-
-# # Evaluate our NN-based models and save results
-
-model_results_df = []
-current_results_path = RESULTS_DIR
-
-start_i = 0
-
-for i in range(start_i, len(df)):
-    print('Calculating for model %i' % i, end='\r')
-    for part in ['val', 'test', 'regards']:
-        bl_dict = {
-            'idx': i,
-            'part': part,
-            'lambda_mmd': df['lambda_mmd'][i],
-            'lambda_l2': df['lambda_l2'][i],
-            'early_stopping_criterion': df['early_stopping_criterion'][i],
-            'learning_rate': df['learning_rate'][i],
-            'num_epochs': df['num_epochs'][i],
-            'train_loss': df['train_loss'][i],
-            'train_nll': df['train_nll'][i],
-            'val_loss': df['val_loss'][i],
-            'val_nll': df['val_nll'][i],
-            **eval_by_run_idx(
-                i, RESULTS_DIR, part=part
-            )
-        }
-        print('Model %i (%s) IPCW CI (all) is %.3f' % (i, part, bl_dict['ci_ipcw_10_all']))
-        model_results_df.append(bl_dict)
-        
-pd.DataFrame(model_results_df).to_csv(
-    os.path.join(RESULTS_DIR, 'model_performance_summary.csv'),
-    index=False)
-
-# # Evaluate NN-based models without race as a predictor and save results
-
-model_results_norace_df = []
-current_results_path = os.path.join(RESULTS_DIR, 'race_free')
-
-start_i = 0
-
-for i in range(start_i, len(df_nr)):
-    print('Calculating for model %i' % i, end='\r')
-    for part in ['val', 'test', 'regards']:
-        bl_dict = {
-            'idx': i,
-            'part': part,
-            'lambda_mmd': df_nr['lambda_mmd'][i],
-            'lambda_l2': df_nr['lambda_l2'][i],
-            'early_stopping_criterion': df_nr['early_stopping_criterion'][i],
-            'learning_rate': df_nr['learning_rate'][i],
-            'num_epochs': df_nr['num_epochs'][i],
-            'train_loss': df_nr['train_loss'][i],
-            'train_nll': df_nr['train_nll'][i],
-            'val_loss': df_nr['val_loss'][i],
-            'val_nll': df_nr['val_nll'][i],
-            **eval_by_run_idx(
-                i, RESULTS_DIR_NORACE, part=part
-            )
-        }
-        print('Model %i (%s) IPCW CI (all) is %.3f' % (i, part, bl_dict['ci_ipcw_10_all']))
-        model_results_norace_df.append(bl_dict)
-        
-pd.DataFrame(model_results_norace_df).to_csv(
-    os.path.join(current_results_path, 'model_performance_summary.csv'),
-    index=False)
+if __name__ == '__main__':
+    main()
