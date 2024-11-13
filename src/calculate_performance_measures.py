@@ -33,6 +33,82 @@ def main():
 
     RESULTS_DIR = '../results/aim_revision'
 
+    calculate_performance_measures(
+        data,
+        os.path.join(RESULTS_DIR, 'cox_baselines'),
+        'Cox'
+    )
+
+    calculate_performance_measures(
+        data,
+        os.path.join(RESULTS_DIR, 'cox_baselines_race_free'),
+        'Cox'
+    )
+
+    calculate_performance_measures(
+        data,
+        os.path.join(RESULTS_DIR, 'parity_constrained_race_free'),
+        'NN',
+        limit=10
+    )
+
+    calculate_performance_measures(
+        data,
+        os.path.join(RESULTS_DIR, 'parity_constrained'),
+        'NN',
+        limit=10
+    )
+
+
+def calculate_performance_measures(data, results_dir, model_type, limit=None):
+
+    print()
+    print('Calculating performance for models in %s' % results_dir)
+    print()
+
+    df = pd.read_csv(
+        os.path.join(results_dir, 'training_summary.csv')
+    ).drop('Unnamed: 0', axis=1).to_dict(orient='records')
+
+    if limit is not None:
+        df = df[:limit]
+
+    if model_type == 'Cox':
+        run_prefix = 'cox_'
+    else:
+        run_prefix = None
+
+    results = []
+
+    for i, run_details in enumerate(df):
+        
+        for part in ['val', 'test', 'regards']:
+            
+            results_dict = {
+                'idx': i,
+                'part': part,
+                **run_details,
+                **eval_by_run_idx(
+                    data,
+                    i,
+                    current_results_path,
+                    run_prefix=run_prefix,
+                    part=part
+                )
+            }
+
+            print('Model %i (%s) IPCW CI (all) is %.3f' % (
+                i, part, bl_dict['ci_ipcw_10_all']))
+            
+            results.append(results_dict)
+            
+    pd.DataFrame(results).to_csv(
+        os.path.join(results_dir, 'performance_summary.csv'),
+        index=False)
+
+
+def previous():
+
     df = pd.read_csv(
         os.path.join(RESULTS_DIR, 'mmd_race_tuning.csv')
     ).drop('Unnamed: 0', axis=1)
