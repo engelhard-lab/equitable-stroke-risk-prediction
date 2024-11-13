@@ -60,7 +60,7 @@ def main():
     )
 
 
-def calculate_performance_measures(data, results_dir, model_type, limit=None):
+def calculate_performance_measures(data, results_dir, limit=None):
 
     print()
     print('Calculating performance for models in %s' % results_dir)
@@ -72,11 +72,6 @@ def calculate_performance_measures(data, results_dir, model_type, limit=None):
 
     if limit is not None:
         df = df[:limit]
-
-    if model_type == 'Cox':
-        run_prefix = 'cox_'
-    else:
-        run_prefix = None
 
     results = []
 
@@ -91,8 +86,7 @@ def calculate_performance_measures(data, results_dir, model_type, limit=None):
                 **eval_by_run_idx(
                     data,
                     i,
-                    current_results_path,
-                    run_prefix=run_prefix,
+                    results_dir,
                     part=part
                 )
             }
