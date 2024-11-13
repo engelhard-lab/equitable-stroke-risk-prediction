@@ -343,33 +343,54 @@ def eval_by_run_idx(data, idx, results_dir, run_prefix='', part='val', bootstrap
         s_part, t_part, -1 * surv_10yr
     )
 
-    ipcw = ipc_weights(data['s_train'], data['t_train'], s_part, t_part)
+    for pos_label, pos_group in zip(['_black', '_white'], [black, ~black]):
 
-    results['CI IPCW (ours from xCI)'] = xCI(
-        s_part, t_part, -1 * surv_10yr,
-        weights=ipcw
-    )
+        for neg_label, neg_group in zip(['_black', '_white'], [black, ~black]):
 
-    for ipcw_label, weights in zip(['', '_ipcw'], [None, ipcw]):
+            label = 'xCI' + pos_label + neg_label
+
+            try:
+
+                results[label] = xCI(
+                    s_part, t_part, -1 * surv_10yr,
+                    pos_group=pos_group, neg_group=neg_group,
+                    weights=weights
+                )
+
+            except Exception as e:
+
+                print(e)
+                results[label] = np.nan
+
+    try:
+        
+        ipcw = ipc_weights(data['s_train'], data['t_train'], s_part, t_part)
+
+        results['CI IPCW (ours from xCI)'] = xCI(
+            s_part, t_part, -1 * surv_10yr,
+            weights=ipcw
+        )
 
         for pos_label, pos_group in zip(['_black', '_white'], [black, ~black]):
 
             for neg_label, neg_group in zip(['_black', '_white'], [black, ~black]):
 
-                label = 'xCI' + ipcw_label + pos_label + neg_label
+                label = 'xCI_ipcw' + pos_label + neg_label
 
-                try:
+                results[label] = xCI(
+                    s_part, t_part, -1 * surv_10yr,
+                    pos_group=pos_group, neg_group=neg_group,
+                    weights=weights
+                )
 
-                    results[label] = xCI(
-                        s_part, t_part, -1 * surv_10yr,
-                        pos_group=pos_group, neg_group=neg_group,
-                        weights=weights
-                    )
+    except Exception as e:
 
-                except Exception as e:
-
-                    print(e)
-                    results[label] = np.nan
+        print(e)
+        results['CI IPCW (ours from xCI)'] = np.nan
+        results['xCI_ipcw_black_black'] = np.nan
+        results['xCI_ipcw_black_white'] = np.nan
+        results['xCI_ipcw_white_black'] = np.nan
+        results['xCI_ipcw_white_white'] = np.nan
         
     return results
 
