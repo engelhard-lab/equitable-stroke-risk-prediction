@@ -18,6 +18,10 @@ def main():
 
     # train baseline models that include race
 
+    print()
+    print('Training Cox baselines that include race')
+    print()
+
     data = load_stroke_data(DATA_PATH)
 
     # code non-stroke events as censoring
@@ -28,6 +32,10 @@ def main():
     train_cox_models(data, '../results/aim_revision/cox_baselines')
 
     # train baseline models that do not include race
+
+    print()
+    print('Training Cox baselines that do not include race')
+    print()
 
     data = load_stroke_data(DATA_PATH, include_race=False)
 
