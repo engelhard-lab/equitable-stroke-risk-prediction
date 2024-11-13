@@ -24,6 +24,11 @@ def main():
 
     data = load_stroke_data(DATA_PATH)
 
+    # code non-stroke events as censoring
+
+    for part in ['s_train', 's_val', 's_test', 's_regards']:
+        data[part] = (data[part] == 1).astype(int)
+
     # Load results summary files
 
     RESULTS_DIR = '../results/aim_revision'
