@@ -90,12 +90,12 @@ def train_cox_models(data, results_dir):
         ):
 
             np.save(
-                results_dir + 'cox_run_%i_%s_pred.npy' % (i, name),
+                os.path.join(results_dir, 'cox_run_%i_%s_pred.npy' % (i, name)),
                 model.predict(X_part)
             )
             
             np.save(
-                results_dir + 'cox_run_%i_%s_surv_10yr.npy' % (i, name),
+                os.path.join(results_dir, 'cox_run_%i_%s_surv_10yr.npy' % (i, name)),
                 np.array([fn(10) for fn in model.predict_survival_function(X_part)])
             )
             
