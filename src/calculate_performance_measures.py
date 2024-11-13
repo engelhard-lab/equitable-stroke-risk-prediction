@@ -56,6 +56,7 @@ def main():
                 'part': part,
                 'lambda_l2': bldf['lambda_l2'][i],
                 **eval_by_run_idx(
+                    data,
                     i,
                     current_results_path,
                     run_prefix='cox_',
@@ -80,7 +81,11 @@ def main():
                 'part': part,
                 'lambda_l2': bldf_nr['lambda_l2'][i],
                 **eval_by_run_idx(
-                    i, current_results_path, run_prefix='cox_', part=part
+                    data,
+                    i,
+                    current_results_path,
+                    run_prefix='cox_',
+                    part=part
                 )
             }
             baseline_results_norace_df.append(bl_dict)
@@ -112,7 +117,7 @@ def main():
                 'val_loss': df['val_loss'][i],
                 'val_nll': df['val_nll'][i],
                 **eval_by_run_idx(
-                    i, RESULTS_DIR, part=part
+                    data, i, RESULTS_DIR, part=part
                 )
             }
             print('Model %i (%s) IPCW CI (all) is %.3f' % (i, part, bl_dict['ci_ipcw_10_all']))
@@ -145,7 +150,7 @@ def main():
                 'val_loss': df_nr['val_loss'][i],
                 'val_nll': df_nr['val_nll'][i],
                 **eval_by_run_idx(
-                    i, RESULTS_DIR_NORACE, part=part
+                    data, i, RESULTS_DIR_NORACE, part=part
                 )
             }
             print('Model %i (%s) IPCW CI (all) is %.3f' % (i, part, bl_dict['ci_ipcw_10_all']))
@@ -277,7 +282,7 @@ def evaluate_run_performance(s_train, t_train, s_test, t_test, surv_10yr):
     return results
 
 
-def eval_by_run_idx(idx, results_dir, run_prefix='', part='val', bootstrap_seed=None):
+def eval_by_run_idx(data, idx, results_dir, run_prefix='', part='val', bootstrap_seed=None):
     
     ## assumes pred year is the final year (which *should* be year 10)
 
