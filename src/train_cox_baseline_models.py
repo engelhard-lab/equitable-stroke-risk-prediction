@@ -99,7 +99,8 @@ def train_cox_models(data, results_dir):
                 np.array([fn(10) for fn in model.predict_survival_function(X_part)])
             )
             
-        pd.DataFrame(results).to_csv(results_dir + 'cox_baselines.csv')
+        pd.DataFrame(results).to_csv(
+            os.path.join(results_dir, 'cox_baselines.csv'))
 
 
 def create_folder(path):
