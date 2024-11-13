@@ -359,7 +359,6 @@ def eval_by_run_idx(data, idx, results_dir, run_prefix='', part='val', bootstrap
                 results[label] = xCI(
                     s_part, t_part, -1 * surv_10yr,
                     pos_group=pos_group, neg_group=neg_group,
-                    weights=weights
                 )
 
             except Exception as e:
@@ -385,7 +384,7 @@ def eval_by_run_idx(data, idx, results_dir, run_prefix='', part='val', bootstrap
                 results[label] = xCI(
                     s_part, t_part, -1 * surv_10yr,
                     pos_group=pos_group, neg_group=neg_group,
-                    weights=weights
+                    weights=ipcw
                 )
 
     except Exception as e:
