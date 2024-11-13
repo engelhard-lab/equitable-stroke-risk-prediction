@@ -89,13 +89,15 @@ for i in range(NUM_RUNS):
     for X_part, name in zip((data['X_val'], data['X_test'], data['X_regards']), ('val', 'test', 'regards')):
 
         np.save(
-            RESULTS_DIR + 'run_%i_%s_pred.npy' % (i, name),
+            os.path.join(RESULTS_DIR, 'run_%i_%s_pred.npy' % (i, name)),
             model.predict(X_part).numpy()
         )
 
         np.save(
-            RESULTS_DIR + 'run_%i_%s_surv_10yr.npy' % (i, name),
+            os.path.join(RESULTS_DIR, 'run_%i_%s_surv_10yr.npy' % (i, name)),
             model.predict_survival_function(X_part, 10).numpy()
         )
         
-    pd.DataFrame(results).to_csv(RESULTS_DIR + 'mmd_race_tuning.csv')
+    pd.DataFrame(results).to_csv(
+        os.path.join(RESULTS_DIR, 'mmd_race_tuning.csv'))
+    

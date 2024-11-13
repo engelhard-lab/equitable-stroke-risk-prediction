@@ -102,7 +102,12 @@ def eval_by_run_idx(idx, results_dir, run_prefix='', part='val', bootstrap_seed=
     labels = ['All', 'Black', 'White']
 
     #pred = np.load(results_dir + run_prefix + 'run_%i_%s_pred.npy' % (idx, part))
-    surv_10yr = np.load(results_dir + run_prefix + 'run_%i_%s_surv_10yr.npy' % (idx, part))
+    surv_10yr = np.load(
+        os.path.join(
+            results_dir,
+            run_prefix + 'run_%i_%s_surv_10yr.npy' % (idx, part)
+        )
+    )
     
     if bootstrap_seed is not None:
         indices = np.arange(len(black))
