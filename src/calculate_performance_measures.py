@@ -88,7 +88,7 @@ def calculate_performance_measures(data, results_dir, limit=None):
             }
 
             print('Model %i (%s) IPCW CI (all) is %.3f' % (
-                i, part, bl_dict['ci_ipcw_10_all']))
+                i, part, results_dict['ci_ipcw_10_all']))
             
             results.append(results_dict)
             
