@@ -16,7 +16,7 @@ from evaluation import evaluate_all
 
 # SET RESULTS FOLDER
 
-RESULTS_DIR = '../results/aim_revision/race_free'
+RESULTS_DIR = '../results/aim_revision/parity_constrained_race_free'
 DATA_PATH = '../data/stroke_risk_ads_v5i_comprisk.csv'
 
 def create_folder(path):
@@ -99,5 +99,5 @@ for i in range(NUM_RUNS):
         )
         
     pd.DataFrame(results).to_csv(
-        os.path.join(RESULTS_DIR, 'mmd_race_tuning.csv'))
+        os.path.join(RESULTS_DIR, 'training_summary.csv'))
     

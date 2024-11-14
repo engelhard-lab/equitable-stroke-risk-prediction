@@ -90,17 +90,17 @@ def train_cox_models(data, results_dir):
         ):
 
             np.save(
-                os.path.join(results_dir, 'cox_run_%i_%s_pred.npy' % (i, name)),
+                os.path.join(results_dir, 'run_%i_%s_pred.npy' % (i, name)),
                 model.predict(X_part)
             )
             
             np.save(
-                os.path.join(results_dir, 'cox_run_%i_%s_surv_10yr.npy' % (i, name)),
+                os.path.join(results_dir, 'run_%i_%s_surv_10yr.npy' % (i, name)),
                 np.array([fn(10) for fn in model.predict_survival_function(X_part)])
             )
             
         pd.DataFrame(results).to_csv(
-            os.path.join(results_dir, 'cox_baselines.csv'))
+            os.path.join(results_dir, 'training_summary.csv'))
 
 
 def create_folder(path):

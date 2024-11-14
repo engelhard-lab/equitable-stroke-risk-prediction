@@ -18,6 +18,7 @@ from tte_measures import xCI, xAUCt, xROCt, ipc_weights
 
 DATA_PATH = '../data/stroke_risk_ads_v5i_comprisk.csv'
 
+
 def main():
 
     # Load data (needed to calculate performance)
@@ -31,28 +32,26 @@ def main():
 
     # Load results summary files
 
-    RESULTS_DIR = '../results/aim_revision'
+    RESULTS_BASEDIR = '../results/aim_revision'
 
     calculate_performance_measures(
         data,
-        os.path.join(RESULTS_DIR, 'cox_baselines'),
+        os.path.join(RESULTS_BASEDIR, 'cox_baselines')
     )
 
     calculate_performance_measures(
         data,
-        os.path.join(RESULTS_DIR, 'cox_baselines_race_free'),
+        os.path.join(RESULTS_BASEDIR, 'cox_baselines_race_free')
     )
 
     calculate_performance_measures(
         data,
-        os.path.join(RESULTS_DIR, 'parity_constrained_race_free'),
-        limit=10
+        os.path.join(RESULTS_BASEDIR, 'parity_constrained_race_free')
     )
 
     calculate_performance_measures(
         data,
-        os.path.join(RESULTS_DIR, 'parity_constrained'),
-        limit=10
+        os.path.join(RESULTS_BASEDIR, 'parity_constrained')
     )
 
 
@@ -94,141 +93,6 @@ def calculate_performance_measures(data, results_dir, limit=None):
             
     pd.DataFrame(results).to_csv(
         os.path.join(results_dir, 'performance_summary.csv'),
-        index=False)
-
-
-def previous():
-
-    df = pd.read_csv(
-        os.path.join(RESULTS_DIR, 'mmd_race_tuning.csv')
-    ).drop('Unnamed: 0', axis=1)
-
-    bldf = pd.read_csv(
-        os.path.join(RESULTS_DIR, 'cox_baselines/cox_baselines.csv')
-    ).drop('Unnamed: 0', axis=1)
-
-    df_nr = pd.read_csv(
-        os.path.join(RESULTS_DIR, 'race_free/mmd_race_tuning.csv')
-    ).drop('Unnamed: 0', axis=1)
-
-    bldf_nr = pd.read_csv(
-        os.path.join(RESULTS_DIR, 'cox_baselines_race_free/cox_baselines.csv')
-    ).drop('Unnamed: 0', axis=1)
-
-    # # Evaluate Cox Model with race as a predictor and save results
-
-    baseline_results_df = []
-    current_results_path = os.path.join(RESULTS_DIR, 'cox_baselines')
-
-    for i in range(len(bldf)):
-        for part in ['val', 'test', 'regards']:
-            bl_dict = {
-                'idx': i,
-                'part': part,
-                'lambda_l2': bldf['lambda_l2'][i],
-                **eval_by_run_idx(
-                    data,
-                    i,
-                    current_results_path,
-                    run_prefix='cox_',
-                    part=part
-                )
-            }
-            baseline_results_df.append(bl_dict)
-            
-    pd.DataFrame(baseline_results_df).to_csv(
-        os.path.join(current_results_path, 'cox_performance_summary.csv'),
-        index=False)
-
-    # # Evaluate Cox models without race as a predictor and save results
-
-    baseline_results_norace_df = []
-    current_results_path = os.path.join(RESULTS_DIR, 'cox_baselines_race_free')
-
-    for i in range(len(bldf_nr)):
-        for part in ['val', 'test', 'regards']:
-            bl_dict = {
-                'idx': i,
-                'part': part,
-                'lambda_l2': bldf_nr['lambda_l2'][i],
-                **eval_by_run_idx(
-                    data,
-                    i,
-                    current_results_path,
-                    run_prefix='cox_',
-                    part=part
-                )
-            }
-            baseline_results_norace_df.append(bl_dict)
-            
-    pd.DataFrame(baseline_results_norace_df).to_csv(
-        os.path.join(current_results_path, 'cox_performance_summary.csv'),
-        index=False)
-
-    # # Evaluate our NN-based models and save results
-
-    model_results_df = []
-    current_results_path = RESULTS_DIR
-
-    start_i = 0
-
-    for i in range(start_i, len(df)):
-        print('Calculating for model %i' % i, end='\r')
-        for part in ['val', 'test', 'regards']:
-            bl_dict = {
-                'idx': i,
-                'part': part,
-                'lambda_mmd': df['lambda_mmd'][i],
-                'lambda_l2': df['lambda_l2'][i],
-                'early_stopping_criterion': df['early_stopping_criterion'][i],
-                'learning_rate': df['learning_rate'][i],
-                'num_epochs': df['num_epochs'][i],
-                'train_loss': df['train_loss'][i],
-                'train_nll': df['train_nll'][i],
-                'val_loss': df['val_loss'][i],
-                'val_nll': df['val_nll'][i],
-                **eval_by_run_idx(
-                    data, i, RESULTS_DIR, part=part
-                )
-            }
-            print('Model %i (%s) IPCW CI (all) is %.3f' % (i, part, bl_dict['ci_ipcw_10_all']))
-            model_results_df.append(bl_dict)
-            
-    pd.DataFrame(model_results_df).to_csv(
-        os.path.join(RESULTS_DIR, 'model_performance_summary.csv'),
-        index=False)
-
-    # # Evaluate NN-based models without race as a predictor and save results
-
-    model_results_norace_df = []
-    current_results_path = os.path.join(RESULTS_DIR, 'race_free')
-
-    start_i = 0
-
-    for i in range(start_i, len(df_nr)):
-        print('Calculating for model %i' % i, end='\r')
-        for part in ['val', 'test', 'regards']:
-            bl_dict = {
-                'idx': i,
-                'part': part,
-                'lambda_mmd': df_nr['lambda_mmd'][i],
-                'lambda_l2': df_nr['lambda_l2'][i],
-                'early_stopping_criterion': df_nr['early_stopping_criterion'][i],
-                'learning_rate': df_nr['learning_rate'][i],
-                'num_epochs': df_nr['num_epochs'][i],
-                'train_loss': df_nr['train_loss'][i],
-                'train_nll': df_nr['train_nll'][i],
-                'val_loss': df_nr['val_loss'][i],
-                'val_nll': df_nr['val_nll'][i],
-                **eval_by_run_idx(
-                    data, i, RESULTS_DIR_NORACE, part=part
-                )
-            }
-            print('Model %i (%s) IPCW CI (all) is %.3f' % (i, part, bl_dict['ci_ipcw_10_all']))
-            model_results_norace_df.append(bl_dict)
-            
-    pd.DataFrame(model_results_norace_df).to_csv(
-        os.path.join(current_results_path, 'model_performance_summary.csv'),
         index=False)
 
 

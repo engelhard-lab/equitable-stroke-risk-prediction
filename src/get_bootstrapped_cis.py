@@ -21,7 +21,7 @@ data = load_stroke_data(DATA_PATH)
 
 # Load results summary files
 
-RESULTS_DIR = '../results/aim_revision'
+RESULTS_DIR = '../results/aim_revision/'
 
 df = pd.read_csv(
     RESULTS_DIR + 'mmd_race_tuning.csv'
