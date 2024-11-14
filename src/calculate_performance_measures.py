@@ -9,7 +9,10 @@ from load_stroke_data import load_stroke_data
 from sksurv.metrics import brier_score, concordance_index_ipcw
 from sksurv.util import Surv
 
-from scipy.stats import mannwhitneyu
+from lifelines import AalenJohansenFitter#, KaplanMeierFitter
+#from evaluation import KaplanMeier
+
+from scipy.stats import mannwhitneyu, chi2
 
 import pandas as pd
 import numpy as np
@@ -25,10 +28,10 @@ def main():
 
     data = load_stroke_data(DATA_PATH)
 
-    # code non-stroke events as censoring
+    # # code non-stroke events as censoring
 
-    for part in ['s_train', 's_val', 's_test', 's_regards']:
-        data[part] = (data[part] == 1).astype(int)
+    # for part in ['s_train', 's_val', 's_test', 's_regards']:
+    #     data[part] = (data[part] == 1).astype(int)
 
     # Load results summary files
 
@@ -98,10 +101,11 @@ def calculate_performance_measures(data, results_dir, limit=None):
 
 # Define functions to evaluate performance
 
-from evaluation import KaplanMeier
-from scipy.stats import chi2
-
-def one_calibration(s_test, t_test, surv, times, n_cal_bins=10, return_curves=False):
+def one_calibration(
+    s_test, t_test, surv, times,
+    n_cal_bins=10, return_curves=False,
+    competing_risks=False
+):
 
     N_times = len(times)
     N_pred = len(surv)
@@ -124,7 +128,12 @@ def one_calibration(s_test, t_test, surv, times, n_cal_bins=10, return_curves=Fa
         prediction_order = np.argsort(-predictions)
         predictions = predictions[prediction_order]
         event_times = t_test.copy()[prediction_order]
-        event_indicators = (s_test == 1).copy()[prediction_order]
+
+        if competing_risks:
+            assert np.amax(s_test) > 1
+            event_indicators = s_test.copy()[prediction_order]
+        else:
+            event_indicators = (s_test == 1).astype(int).copy()[prediction_order]
 
         # Can't do np.mean since split array may be of different sizes.
         binned_event_times = np.array_split(event_times, n_cal_bins)
@@ -140,8 +149,20 @@ def one_calibration(s_test, t_test, surv, times, n_cal_bins=10, return_curves=Fa
 
             prob = probability_means[b]
 
-            km_model = KaplanMeier(binned_event_times[b], binned_event_indicators[b])
-            event_probability = 1 - km_model.predict(time)
+            cd = (
+                AalenJohansenFitter(calculate_variance=False)
+                .fit(
+                    binned_event_times[b],
+                    binned_event_indicators[b],
+                    event_of_interest=1
+                )
+                .cumulative_density_
+            )
+
+            event_probability = cd.iloc[cd.index.get_loc(time), 0]
+
+            #km_model = KaplanMeier(binned_event_times[b], binned_event_indicators[b])
+            #event_probability = 1 - km_model.predict(time)
             bin_count = len(binned_event_times[b])
             
             if prob >= 1.0:
@@ -176,8 +197,8 @@ def evaluate_run_performance(s_train, t_train, s_test, t_test, surv_10yr):
     results = {}
 
     times, bs = brier_score(
-        Surv.from_arrays(s_train.astype('bool'), t_train),
-        Surv.from_arrays(s_test.astype('bool'), t_test),
+        Surv.from_arrays((s_train == 1).astype('bool'), t_train),
+        Surv.from_arrays((s_test == 1).astype('bool'), t_test),
         np.array(surv_10yr)[:, np.newaxis],
         [10])
 
@@ -189,7 +210,8 @@ def evaluate_run_performance(s_train, t_train, s_test, t_test, surv_10yr):
         [surv_10yr],
         [10],
         n_cal_bins=10,
-        return_curves=True
+        return_curves=True,
+        competing_risks=True
     )
 
     for t, c, p, op, ep in zip(times, chisq, pval, observed, expected):
@@ -207,8 +229,8 @@ def evaluate_run_performance(s_train, t_train, s_test, t_test, surv_10yr):
         results['onecal_%i_intercept' % t] = c
         
     ci, _, _, _, _ = concordance_index_ipcw(
-        Surv.from_arrays(s_train.astype('bool'), t_train),
-        Surv.from_arrays(s_test.astype('bool'), t_test),
+        Surv.from_arrays((s_train == 1).astype('bool'), t_train),
+        Surv.from_arrays((s_test == 1).astype('bool'), t_test),
         -1 * surv_10yr
     )
 
@@ -275,7 +297,7 @@ def eval_by_run_idx(data, idx, results_dir, run_prefix='', part='val', bootstrap
     # xCI results
 
     results['CI (ours from xCI)'] = xCI(
-        s_part, t_part, -1 * surv_10yr
+        (s_part == 1).astype(int), t_part, -1 * surv_10yr
     )
 
     for pos_label, pos_group in zip(['_black', '_white'], [black, ~black]):
@@ -287,7 +309,7 @@ def eval_by_run_idx(data, idx, results_dir, run_prefix='', part='val', bootstrap
             try:
 
                 results[label] = xCI(
-                    s_part, t_part, -1 * surv_10yr,
+                    (s_part == 1).astype(int), t_part, -1 * surv_10yr,
                     pos_group=pos_group, neg_group=neg_group,
                 )
 
@@ -301,7 +323,7 @@ def eval_by_run_idx(data, idx, results_dir, run_prefix='', part='val', bootstrap
         ipcw = ipc_weights(data['s_train'], data['t_train'], s_part, t_part)
 
         results['CI IPCW (ours from xCI)'] = xCI(
-            s_part, t_part, -1 * surv_10yr,
+            (s_part == 1).astype(int), t_part, -1 * surv_10yr,
             weights=ipcw
         )
 
@@ -312,7 +334,7 @@ def eval_by_run_idx(data, idx, results_dir, run_prefix='', part='val', bootstrap
                 label = 'xCI_ipcw' + pos_label + neg_label
 
                 results[label] = xCI(
-                    s_part, t_part, -1 * surv_10yr,
+                    (s_part == 1).astype(int), t_part, -1 * surv_10yr,
                     pos_group=pos_group, neg_group=neg_group,
                     weights=ipcw
                 )
