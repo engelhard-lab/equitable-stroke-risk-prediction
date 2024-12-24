@@ -28,6 +28,8 @@ RESULTS_BASEDIR = '../results/aim_revision'
 #     #pd.read_csv('model_xCI_df_%s.csv' % RESULTS_DATE)
 # )
 
+print('Loading results summaries')
+
 df = pd.read_csv(os.path.join(
     RESULTS_BASEDIR,
     'parity_constrained',
@@ -69,6 +71,8 @@ bdf_nr = pd.read_csv(os.path.join(
 # # xCI results
 
 # In[5]:
+
+print('Finding best performing models')
 
 
 # use best validation result
@@ -143,6 +147,8 @@ best_cox, best_any, fair_mmd, best_cox_nr, best_nr
 # sys.path.append('../src')
 # from load_data import load_paper_2_data
 # data = load_paper_2_data()
+
+print('Loading data')
 
 data = load_stroke_data(DATA_PATH)
 
@@ -291,6 +297,8 @@ x_labels = [
 
 # # Figure 1
 
+print('Creating Performance Summary Figure')
+
 fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(15, 10))
 
 for a, part, slbl in zip(ax, ['test', 'regards'], set_labels):
@@ -376,6 +384,8 @@ plt.show()
 
 # # Figure 2: ROC at 10 years
 
+print('Creating ROC Curves')
+
 # load models (Cox, best, fairest) x (test set, REGARDS)
 
 time = 10
@@ -436,6 +446,8 @@ plt.show()
 
 
 # # Fig 2b: PR Curve at 10 years
+
+print('Creating PR Curves')
 
 # load models (Cox, best, fairest) x (test set, REGARDS)
 time = 10
@@ -498,6 +510,8 @@ plt.show()
 
 
 # # Figure: CI (all) vs Min xCI (v2)
+
+print('Creating model density')
 
 fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(18, 6))
 
@@ -610,6 +624,8 @@ plt.show()
 
 # # Predictive distributions
 
+print('Creating predictive distributions')
+
 fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(20, 8), sharey=True)
 
 for rowidx, part in enumerate(['test', 'regards']):
@@ -653,6 +669,8 @@ plt.show()
 
 # # Label-specific predictive distributions
 
+print('Creating label-specific predictive distributions')
+
 fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(20, 8), sharey=True)
 
 for rowidx, part in enumerate(['test', 'regards']):
@@ -694,6 +712,8 @@ plt.savefig('../figures/predictive_distributions_by_outcome.pdf')
 plt.show()
 
 # # calibration
+
+print('Creating calibration plots')
 
 ## TODO: FIX THIS
 
