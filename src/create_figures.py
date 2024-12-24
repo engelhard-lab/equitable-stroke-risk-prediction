@@ -295,7 +295,7 @@ fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(15, 10))
 
 for a, part, slbl in zip(ax, ['test', 'regards'], set_labels):
     
-    for offset, idx, prefix, lbl, mdir, c in zip(
+    for offset, idx, lbl, mdir, c in zip(
         [-.3, -.15, 0, .15, .3], model_idx, model_labels, model_dir, legend_colors):
         
         # plot the overall CI
@@ -384,7 +384,7 @@ fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(30, 12), sharex=True, sharey=T
 
 for rowidx, part in enumerate(['test', 'regards']):
 
-    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
+    for colidx, (idx, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
 
         pred_risk = load_predictions(idx, mdir, part=part)
 
@@ -444,7 +444,7 @@ fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(30, 12), sharex=True, sharey=T
 
 for rowidx, part in enumerate(['test', 'regards']):
 
-    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
+    for colidx, (idx, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
 
         pred_risk = load_predictions(idx, mdir, part=part)
 
@@ -615,7 +615,7 @@ fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(20, 8), sharey=True)
 
 for rowidx, part in enumerate(['test', 'regards']):
 
-    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
+    for colidx, (idx, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
 
         pred_risk = load_predictions(idx, mdir, part=part)
 
@@ -658,7 +658,7 @@ fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(20, 8), sharey=True)
 
 for rowidx, part in enumerate(['test', 'regards']):
 
-    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
+    for colidx, (idx, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
 
         pred_risk = load_predictions(idx, mdir, part=part)
 
@@ -713,7 +713,7 @@ fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(20, 8))
 
 for rowidx, part in enumerate(['test', 'regards']):
 
-    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
+    for colidx, (idx, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
 
         pred_risk = load_predictions(idx, mdir, part=part)
 
