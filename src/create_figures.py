@@ -8,7 +8,7 @@ import seaborn as sns
 
 from load_stroke_data import load_stroke_data
 
-import sys
+import sys, os
 #sys.path.append('../../tte-performance')
 from tte_measures import  xCI, xAUCt, xROCt, xAPt, xPRt, ipc_weights, kaplan_meier
 
@@ -695,6 +695,8 @@ plt.savefig('../figures/predictive_distributions_by_outcome.pdf')
 plt.show()
 
 # # calibration
+
+## TODO: FIX THIS
 
 # for calibration, don't code non-stroke events as censoring
 # we will use the Aalen-Johansen estimator
