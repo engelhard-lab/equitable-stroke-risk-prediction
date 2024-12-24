@@ -146,6 +146,12 @@ best_cox, best_any, fair_mmd, best_cox_nr, best_nr
 
 data = load_stroke_data(DATA_PATH)
 
+# code non-stroke events as censoring
+
+for part in ['s_train', 's_val', 's_test', 's_regards']:
+    data[part] = (data[part] == 1).astype(int)
+
+
 def load_predictions(idx, results_dir, part='val'):
     
     surv_10yr = np.load(os.path.join(
@@ -689,6 +695,11 @@ plt.savefig('../figures/predictive_distributions_by_outcome.pdf')
 plt.show()
 
 # # calibration
+
+# for calibration, don't code non-stroke events as censoring
+# we will use the Aalen-Johansen estimator
+
+data = load_stroke_data(DATA_PATH)
 
 # import os
 # sys.path.append(os.path.expanduser('~/dnmc/src'))
