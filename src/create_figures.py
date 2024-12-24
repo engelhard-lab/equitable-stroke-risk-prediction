@@ -118,10 +118,15 @@ best_any = df[df['part'] == 'val'].sort_values(
 best_nr = df_nr[df_nr['part'] == 'val'].sort_values(
     'CI IPCW (ours from xCI)', ascending=False)['idx'].values[0]
 
+# fair_no_mmd = df[(df['part'] == 'val') & (df['lambda_mmd'] == 0)].sort_values(
+#     'criterion', ascending=False)['idx'].values[0]
+# fair_mmd = df[(df['part'] == 'val') & (df['lambda_mmd'] > 0)].sort_values(
+#     'criterion', ascending=False)['idx'].values[0]
+
 fair_no_mmd = df[(df['part'] == 'val') & (df['lambda_mmd'] == 0)].sort_values(
-    'criterion', ascending=False)['idx'].values[0]
+    'min_xCI', ascending=False)['idx'].values[0]
 fair_mmd = df[(df['part'] == 'val') & (df['lambda_mmd'] > 0)].sort_values(
-    'criterion', ascending=False)['idx'].values[0]
+    'min_xCI', ascending=False)['idx'].values[0]
 
 
 # previous result: (0, 249, 1279)

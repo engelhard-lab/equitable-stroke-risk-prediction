@@ -320,7 +320,12 @@ def eval_by_run_idx(data, idx, results_dir, run_prefix='', part='val', bootstrap
 
     try:
         
-        ipcw = ipc_weights(data['s_train'], data['t_train'], s_part, t_part)
+        ipcw = ipc_weights(
+            (data['s_train'] == 1).astype(int),
+            data['t_train'],
+            (s_part == 1).astype(int),
+            t_part
+        )
 
         results['CI IPCW (ours from xCI)'] = xCI(
             (s_part == 1).astype(int), t_part, -1 * surv_10yr,
