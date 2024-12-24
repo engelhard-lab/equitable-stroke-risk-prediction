@@ -161,7 +161,8 @@ def one_calibration(
                 .cumulative_density_
             )
 
-            event_probability = cd.iloc[cd.index.get_loc(time), 0]
+            event_probability = cd[cd.index >= time].iloc[0, 0]
+            #event_probability = cd.iloc[cd.index.get_loc(time), 0]
 
             #km_model = KaplanMeier(binned_event_times[b], binned_event_indicators[b])
             #event_probability = 1 - km_model.predict(time)
