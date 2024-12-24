@@ -74,6 +74,8 @@ def calculate_performance_measures(data, results_dir, limit=None):
     results = []
 
     for i, run_details in enumerate(df):
+
+        print('Calculating for model %i' % i)
         
         for part in ['val', 'test', 'regards']:
             
