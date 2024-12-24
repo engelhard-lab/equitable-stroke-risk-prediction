@@ -4,6 +4,8 @@
 import sys, os
 import warnings
 
+warnings.filterwarnings('once')
+
 from load_stroke_data import load_stroke_data
 
 from sksurv.metrics import brier_score, concordance_index_ipcw
