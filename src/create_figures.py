@@ -99,14 +99,17 @@ CI_COLUMNS = [
 # In[7]:
 
 
-best_cox = bdf[bdf['part'] == 'val'].sort_values('min_ipcw_xCI', ascending=False)['idx'].values[0]
-best_cox_nr = bdf_nr[bdf_nr['part'] == 'val'].sort_values('min_ipcw_xCI', ascending=False)['idx'].values[0]
+best_cox = bdf[bdf['part'] == 'val'].sort_values(
+    'CI IPCW (ours from xCI)', ascending=False)['idx'].values[0]
+
+best_cox_nr = bdf_nr[bdf_nr['part'] == 'val'].sort_values(
+    'CI IPCW (ours from xCI)', ascending=False)['idx'].values[0]
 
 
 # In[8]:
 
 
-df['criterion'] = df['min_ipcw_xCI'] + df['CI IPCW (ours from xCI)']
+#df['criterion'] = df['min_ipcw_xCI'] + df['CI IPCW (ours from xCI)']
 
 best_no_mmd = df[(df['part'] == 'val') & (df['lambda_mmd'] == 0)].sort_values(
     'CI IPCW (ours from xCI)', ascending=False)['idx'].values[0]
@@ -128,10 +131,8 @@ fair_no_mmd = df[(df['part'] == 'val') & (df['lambda_mmd'] == 0)].sort_values(
 fair_mmd = df[(df['part'] == 'val') & (df['lambda_mmd'] > 0)].sort_values(
     'min_xCI', ascending=False)['idx'].values[0]
 
+# TODO: change this to min_ipcw_xCI after results are recomputed
 
-# previous result: (0, 249, 1279)
-
-# In[9]:
 
 
 best_cox, best_any, fair_mmd, best_cox_nr, best_nr
