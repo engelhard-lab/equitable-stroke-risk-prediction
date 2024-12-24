@@ -1,54 +1,69 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-
-# In[2]:
-
+from load_stroke_data import load_stroke_data
 
 import sys
-sys.path.append('../../tte-performance')
-from measures import  xCI, xAUCt, xROCt, xAPt, xPRt, ipc_weights, kaplan_meier
-
-
-# In[3]:
+#sys.path.append('../../tte-performance')
+from tte_measures import  xCI, xAUCt, xROCt, xAPt, xPRt, ipc_weights, kaplan_meier
 
 
 #plt.style.use('seaborn')
 sns.set()
 
+DATA_PATH = '../data/stroke_risk_ads_v5i_comprisk.csv'
 
-# In[4]:
+RESULTS_BASEDIR = '../results/aim_revision'
 
+#RESULTS_DIR = '../results/results_090723/'
+#RESULTS_DIR_NORACE = '../results/results_120323_norace/'
 
-#RESULTS_DATE = '1220'
-RESULTS_DIR = '../results/results_090723/'
-RESULTS_DIR_NORACE = '../results/results_120323_norace/'
+# df = pd.read_csv(RESULTS_DIR + 'model_performance_summary.csv').merge(
+#     pd.read_csv(RESULTS_DIR + 'model_xCI_summary.csv')
+#     #pd.read_csv('model_xCI_df_%s.csv' % RESULTS_DATE)
+# )
 
-df = pd.read_csv(RESULTS_DIR + 'model_performance_summary.csv').merge(
-    pd.read_csv(RESULTS_DIR + 'model_xCI_summary.csv')
-    #pd.read_csv('model_xCI_df_%s.csv' % RESULTS_DATE)
-)
+df = pd.read_csv(os.path.join(
+    RESULTS_BASEDIR,
+    'parity_constrained',
+    'performance_summary.csv'
+    ))
 
-bdf = pd.read_csv(RESULTS_DIR + 'cox_performance_summary.csv').merge(
-    pd.read_csv(RESULTS_DIR + 'cox_xCI_summary.csv')
-)
+# bdf = pd.read_csv(RESULTS_DIR + 'cox_performance_summary.csv').merge(
+#     pd.read_csv(RESULTS_DIR + 'cox_xCI_summary.csv')
+# )
 
-df_nr = pd.read_csv(RESULTS_DIR_NORACE + 'model_performance_summary.csv').merge(
-    pd.read_csv(RESULTS_DIR_NORACE + 'model_xCI_summary.csv')
-    #pd.read_csv('model_xCI_df_%s.csv' % RESULTS_DATE)
-)
+bdf = pd.read_csv(os.path.join(
+    RESULTS_BASEDIR,
+    'cox_baselines',
+    'performance_summary.csv'
+    ))
 
-bdf_nr = pd.read_csv(RESULTS_DIR_NORACE + 'cox_performance_summary.csv').merge(
-    pd.read_csv(RESULTS_DIR_NORACE + 'cox_xCI_summary.csv')
-)
+# df_nr = pd.read_csv(RESULTS_DIR_NORACE + 'model_performance_summary.csv').merge(
+#     pd.read_csv(RESULTS_DIR_NORACE + 'model_xCI_summary.csv')
+#     #pd.read_csv('model_xCI_df_%s.csv' % RESULTS_DATE)
+# )
+
+df_nr = pd.read_csv(os.path.join(
+    RESULTS_BASEDIR,
+    'parity_constrained_race_free',
+    'performance_summary.csv'
+    ))
+
+# bdf_nr = pd.read_csv(RESULTS_DIR_NORACE + 'cox_performance_summary.csv').merge(
+#     pd.read_csv(RESULTS_DIR_NORACE + 'cox_xCI_summary.csv')
+# )
+
+bdf_nr = pd.read_csv(os.path.join(
+    RESULTS_BASEDIR,
+    'cox_baselines_race_free',
+    'performance_summary.csv'
+    ))
 
 
 # # xCI results
@@ -125,17 +140,18 @@ best_cox, best_any, fair_mmd, best_cox_nr, best_nr
 # In[11]:
 
 
-sys.path.append('../src')
-from load_data import load_paper_2_data
-data = load_paper_2_data()
+# sys.path.append('../src')
+# from load_data import load_paper_2_data
+# data = load_paper_2_data()
 
+data = load_stroke_data(DATA_PATH)
 
-# In[12]:
-
-
-def load_predictions(idx, results_dir, run_prefix='', part='val'):
+def load_predictions(idx, results_dir, part='val'):
     
-    surv_10yr = np.load(results_dir + run_prefix + 'run_%i_%s_surv_10yr.npy' % (idx, part))
+    surv_10yr = np.load(os.path.join(
+        results_dir,
+        'run_%i_%s_surv_10yr.npy' % (idx, part)
+        ))
     
     if np.amin(surv_10yr) < 0:
         warnings.warn('Warning: %.2f of surv values are <0' % np.mean(surv_10yr < 0))
@@ -145,41 +161,99 @@ def load_predictions(idx, results_dir, run_prefix='', part='val'):
         
     return 1 - surv_10yr
 
+cox_pred_test = load_predictions(
+    best_cox,
+    os.path.join(RESULTS_BASEDIR, 'cox_baselines'),
+    part='test'
+)
 
-# In[13]:
+cox_pred_regards = load_predictions(
+    best_cox,
+    os.path.join(RESULTS_BASEDIR, 'cox_baselines'),
+    part='regards'
+)
 
+best_no_mmd_pred_test = load_predictions(
+    best_no_mmd,
+    os.path.join(RESULTS_BASEDIR, 'parity_constrained'),
+    part='test'
+)
 
-cox_pred_test = load_predictions(best_cox, RESULTS_DIR, run_prefix='cox_', part='test')
-cox_pred_regards = load_predictions(best_cox, RESULTS_DIR, run_prefix='cox_', part='regards')
+best_no_mmd_pred_regards = load_predictions(
+    best_no_mmd,
+    os.path.join(RESULTS_BASEDIR, 'parity_constrained'),
+    part='regards'
+)
 
-best_no_mmd_pred_test = load_predictions(best_no_mmd, RESULTS_DIR, part='test')
-best_no_mmd_pred_regards = load_predictions(best_no_mmd, RESULTS_DIR, part='regards')
+best_mmd_pred_test = load_predictions(
+    best_mmd,
+    os.path.join(RESULTS_BASEDIR, 'parity_constrained'),
+    part='test'
+)
 
-best_mmd_pred_test = load_predictions(best_mmd, RESULTS_DIR, part='test')
-best_mmd_pred_regards = load_predictions(best_mmd, RESULTS_DIR, part='regards')
+best_mmd_pred_regards = load_predictions(
+    best_mmd,
+    os.path.join(RESULTS_BASEDIR, 'parity_constrained'),
+    part='regards'
+)
 
-fair_no_mmd_pred_test = load_predictions(fair_no_mmd, RESULTS_DIR, part='test')
-fair_no_mmd_pred_regards = load_predictions(fair_no_mmd, RESULTS_DIR, part='regards')
+fair_no_mmd_pred_test = load_predictions(
+    fair_no_mmd,
+    os.path.join(RESULTS_BASEDIR, 'parity_constrained'),
+    part='test'
+)
 
-fair_mmd_pred_test = load_predictions(fair_mmd, RESULTS_DIR, part='test')
-fair_mmd_pred_regards = load_predictions(fair_mmd, RESULTS_DIR, part='regards')
+fair_no_mmd_pred_regards = load_predictions(
+    fair_no_mmd,
+    os.path.join(RESULTS_BASEDIR, 'parity_constrained'),
+    part='regards'
+)
 
-cox_nr_pred_test = load_predictions(best_cox_nr, RESULTS_DIR_NORACE, run_prefix='cox_', part='test')
-cox_nr_pred_regards = load_predictions(best_cox_nr, RESULTS_DIR_NORACE, run_prefix='cox_', part='regards')
+fair_mmd_pred_test = load_predictions(
+    fair_mmd,
+    os.path.join(RESULTS_BASEDIR, 'parity_constrained'),
+    part='test'
+)
 
-best_nr_pred_test = load_predictions(best_nr, RESULTS_DIR_NORACE, part='test')
-best_nr_pred_regards = load_predictions(best_nr, RESULTS_DIR_NORACE, part='regards')
+fair_mmd_pred_regards = load_predictions(
+    fair_mmd,
+    os.path.join(RESULTS_BASEDIR, 'parity_constrained'),
+    part='regards'
+)
+
+cox_nr_pred_test = load_predictions(
+    best_cox_nr,
+    os.path.join(RESULTS_BASEDIR, 'cox_baselines_race_free'),
+    part='test'
+)
+
+cox_nr_pred_regards = load_predictions(
+    best_cox_nr,
+    os.path.join(RESULTS_BASEDIR, 'cox_baselines_race_free'),
+    part='regards'
+)
+
+best_nr_pred_test = load_predictions(
+    best_nr,
+    os.path.join(RESULTS_BASEDIR, 'parity_constrained_race_free'),
+    part='test'
+)
+
+best_nr_pred_regards = load_predictions(
+    best_nr,
+    os.path.join(RESULTS_BASEDIR, 'parity_constrained_race_free'),
+    part='regards'
+)
+
+COX_DIR = os.path.join(RESULTS_BASEDIR, 'cox_baselines')
+COXRF_DIR = os.path.join(RESULTS_BASEDIR, 'cox_baselines_race_free')
+PC_DIR = os.path.join(RESULTS_BASEDIR, 'parity_constrained')
+PCRF_DIR = os.path.join(RESULTS_BASEDIR, 'parity_constrained_race_free')
 
 
 # # Define variables to be used across several different figures
 
-# In[15]:
-
-
 set_labels = ['Performance on the Test Set', 'Performance on REGARDS']
-
-#dfi = df.set_index(['idx', 'part'])
-#bdfi = bdf.set_index(['idx', 'part'])
 
 fig1_summary = []
 
@@ -196,9 +270,8 @@ model_labels = [
 ]
 
 model_idx = [best_cox, best_any, best_cox_nr, best_nr, fair_mmd]
-model_prefix = ['cox_', '', 'cox_', '', '']
 
-model_dir = [RESULTS_DIR, RESULTS_DIR, RESULTS_DIR_NORACE, RESULTS_DIR_NORACE, RESULTS_DIR]
+model_dir = [COX_DIR, PC_DIR, COXRF_DIR, PCRF_DIR, PC_DIR]
 
 legend_colors = ['b', 'g', 'c', 'm', 'y']
 
@@ -212,19 +285,16 @@ x_labels = [
 
 # # Figure 1
 
-# In[16]:
-
-
 fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(15, 10))
 
 for a, part, slbl in zip(ax, ['test', 'regards'], set_labels):
     
     for offset, idx, prefix, lbl, mdir, c in zip(
-        [-.3, -.15, 0, .15, .3], model_idx, model_prefix, model_labels, model_dir, legend_colors):
+        [-.3, -.15, 0, .15, .3], model_idx, model_labels, model_dir, legend_colors):
         
         # plot the overall CI
         
-        pred_risk = load_predictions(idx, mdir, run_prefix=prefix, part=part)
+        pred_risk = load_predictions(idx, mdir, part=part)
         
         s_part = data['s_' + part]
         t_part = data['t_' + part]
@@ -301,21 +371,16 @@ plt.show()
 
 # # Figure 2: ROC at 10 years
 
-# In[17]:
-
-
 # load models (Cox, best, fairest) x (test set, REGARDS)
-
-# TODO: FLIP
 
 time = 10
 fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(30, 12), sharex=True, sharey=True)
 
 for rowidx, part in enumerate(['test', 'regards']):
 
-    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_prefix, model_labels, model_dir)):
+    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
 
-        pred_risk = load_predictions(idx, mdir, run_prefix=prefix, part=part)
+        pred_risk = load_predictions(idx, mdir, part=part)
 
         s_part = data['s_' + part]
         t_part = data['t_' + part]
@@ -359,8 +424,6 @@ for rowidx, part in enumerate(['test', 'regards']):
         a.set_xlabel('False Positive Rate (t=%i)' % time)
 
         a.legend()
-            
-    #break
 
 plt.tight_layout()
 plt.savefig('../figures/roc.pdf')
@@ -369,18 +432,15 @@ plt.show()
 
 # # Fig 2b: PR Curve at 10 years
 
-# In[18]:
-
-
 # load models (Cox, best, fairest) x (test set, REGARDS)
 time = 10
 fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(30, 12), sharex=True, sharey=True)
 
 for rowidx, part in enumerate(['test', 'regards']):
 
-    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_prefix, model_labels, model_dir)):
+    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
 
-        pred_risk = load_predictions(idx, mdir, run_prefix=prefix, part=part)
+        pred_risk = load_predictions(idx, mdir, part=part)
 
         s_part = data['s_' + part]
         t_part = data['t_' + part]
@@ -426,8 +486,6 @@ for rowidx, part in enumerate(['test', 'regards']):
             a.set_xlabel('Recall (t=%i)' % time)
             
             a.legend()
-            
-    #break
 
 plt.tight_layout()
 plt.savefig('../figures/pr.pdf')
@@ -435,9 +493,6 @@ plt.show()
 
 
 # # Figure: CI (all) vs Min xCI (v2)
-
-# In[19]:
-
 
 fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(18, 6))
 
@@ -548,30 +603,106 @@ plt.savefig('../figures/fig3.pdf')
 plt.show()
 
 
+# # Predictive distributions
+
+fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(20, 8), sharey=True)
+
+for rowidx, part in enumerate(['test', 'regards']):
+
+    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
+
+        pred_risk = load_predictions(idx, mdir, part=part)
+
+        s_part = data['s_' + part]
+        t_part = data['t_' + part]
+        black = data['mbv_' + part].astype(bool)
+            
+        print('Running for %s on %s' % (lbl, part.capitalize()))
+
+        a = ax[rowidx, colidx]
+
+        pred_year = 10
+        stride = 1
+        cal_bw = .1
+
+        sns.boxplot(x=~black, y=pred_risk, showfliers=False, ax=a, width=.7)
+        a.set_xticklabels(['Black', 'White'])
+        
+        risk_black = 1 - kaplan_meier(s_part[black], t_part[black], np.array([pred_year, ]))
+        risk_white = 1 - kaplan_meier(s_part[~black], t_part[~black], np.array([pred_year, ]))
+        
+        start, stop = a.get_xlim()
+        
+        a.plot([start, (stop + start) / 2], [risk_black, risk_black], 'k--')
+        a.plot([(stop + start) / 2, stop], [risk_white, risk_white], 'k--', label='10-year prevalence')
+
+        a.set_title(lbl + ' on %s' % part.capitalize())
+        a.set_ylabel('Predicted 10-year risk')
+
+        a.legend()
+
+plt.tight_layout()
+plt.savefig('../figures/predictive_distributions.pdf')
+plt.show()
+
+
+# # Label-specific predictive distributions
+
+fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(20, 8), sharey=True)
+
+for rowidx, part in enumerate(['test', 'regards']):
+
+    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
+
+        pred_risk = load_predictions(idx, mdir, part=part)
+
+        s_part = data['s_' + part]
+        t_part = data['t_' + part]
+        black = data['mbv_' + part].astype(bool)
+            
+        print('Running for %s on %s' % (lbl, part.capitalize()))
+
+        a = ax[rowidx, colidx]
+
+        pred_year = 10
+        stride = 1
+        cal_bw = .1
+
+        sns.boxplot(x=s_part, y=pred_risk, hue=~black, showfliers=False, ax=a, width=.7)
+        a.set_xticklabels(['Censored', 'Observed\nEvent'])
+        
+        risk_black = 1 - kaplan_meier(s_part[black], t_part[black], np.array([pred_year, ]))
+        risk_white = 1 - kaplan_meier(s_part[~black], t_part[~black], np.array([pred_year, ]))
+        
+        start, stop = a.get_xlim()
+        
+        a.set_title(lbl + ' on %s' % part.capitalize())
+        a.set_ylabel('Predicted 10-year risk')
+
+        lgnd = a.legend()
+        
+        lgnd.get_texts()[0].set_text('Black')
+        lgnd.get_texts()[1].set_text('White')
+
+plt.tight_layout()
+plt.savefig('../figures/predictive_distributions_by_outcome.pdf')
+plt.show()
+
 # # calibration
 
-# In[20]:
+# import os
+# sys.path.append(os.path.expanduser('~/dnmc/src'))
+# from evaluation import one_calibration, s_cal
 
-
-import os
-sys.path.append(os.path.expanduser('~/dnmc/src'))
-from evaluation import one_calibration, s_cal
-
-
-# In[21]:
-
-
-#model_labels = ['Cox Model' ,'Best Model (by CI)', 'Fairest Model (by xCI)']
-#model_idx = [best_cox, best_any, fair_mmd]
-#model_prefix = ['cox_', '', '']
+from calculate_performance_measures import one_calibration
 
 fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(20, 8))
 
 for rowidx, part in enumerate(['test', 'regards']):
 
-    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_prefix, model_labels, model_dir)):
+    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_labels, model_dir)):
 
-        pred_risk = load_predictions(idx, mdir, run_prefix=prefix, part=part)
+        pred_risk = load_predictions(idx, mdir, part=part)
 
         s_part = data['s_' + part]
         t_part = data['t_' + part]
@@ -619,375 +750,3 @@ for rowidx, part in enumerate(['test', 'regards']):
 plt.tight_layout()
 plt.savefig('../figures/calibration.pdf')
 plt.show()
-
-
-# # Predictive distributions
-
-# In[22]:
-
-
-#model_labels = ['Cox Model' ,'Best Model (by CI)', 'Fairest Model (by xCI)']
-#model_idx = [best_cox, best_any, fair_mmd]
-#model_prefix = ['cox_', '', '']
-
-fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(20, 8), sharey=True)
-
-for rowidx, part in enumerate(['test', 'regards']):
-
-    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_prefix, model_labels, model_dir)):
-
-        pred_risk = load_predictions(idx, mdir, run_prefix=prefix, part=part)
-
-        s_part = data['s_' + part]
-        t_part = data['t_' + part]
-        black = data['mbv_' + part].astype(bool)
-            
-        print('Running for %s on %s' % (lbl, part.capitalize()))
-
-        a = ax[rowidx, colidx]
-
-        pred_year = 10
-        stride = 1
-        cal_bw = .1
-
-        sns.boxplot(x=~black, y=pred_risk, showfliers=False, ax=a, width=.7)
-        a.set_xticklabels(['Black', 'White'])
-        
-        risk_black = 1 - kaplan_meier(s_part[black], t_part[black], np.array([pred_year, ]))
-        risk_white = 1 - kaplan_meier(s_part[~black], t_part[~black], np.array([pred_year, ]))
-        
-        #risk_black = s_part[black].mean()
-        #risk_white = s_part[~black].mean()
-        
-        start, stop = a.get_xlim()
-        
-        a.plot([start, (stop + start) / 2], [risk_black, risk_black], 'k--')
-        a.plot([(stop + start) / 2, stop], [risk_white, risk_white], 'k--', label='10-year prevalence')
-
-        a.set_title(lbl + ' on %s' % part.capitalize())
-        a.set_ylabel('Predicted 10-year risk')
-
-        a.legend()
-
-plt.tight_layout()
-plt.savefig('../figures/predictive_distributions.pdf')
-plt.show()
-
-
-# # Label-specific predictive distributions
-
-# In[23]:
-
-
-#model_labels = ['Cox Model' ,'Best Model (by CI)', 'Fairest Model (by xCI)']
-#model_idx = [best_cox, best_any, fair_mmd]
-#model_prefix = ['cox_', '', '']
-
-fig, ax = plt.subplots(nrows=2, ncols=5, figsize=(20, 8), sharey=True)
-
-for rowidx, part in enumerate(['test', 'regards']):
-
-    for colidx, (idx, prefix, lbl, mdir) in enumerate(zip(model_idx, model_prefix, model_labels, model_dir)):
-
-        pred_risk = load_predictions(idx, mdir, run_prefix=prefix, part=part)
-
-        s_part = data['s_' + part]
-        t_part = data['t_' + part]
-        black = data['mbv_' + part].astype(bool)
-            
-        print('Running for %s on %s' % (lbl, part.capitalize()))
-
-        a = ax[rowidx, colidx]
-
-        pred_year = 10
-        stride = 1
-        cal_bw = .1
-
-        sns.boxplot(x=s_part, y=pred_risk, hue=~black, showfliers=False, ax=a, width=.7)
-        a.set_xticklabels(['Censored', 'Observed\nEvent'])
-        
-        risk_black = 1 - kaplan_meier(s_part[black], t_part[black], np.array([pred_year, ]))
-        risk_white = 1 - kaplan_meier(s_part[~black], t_part[~black], np.array([pred_year, ]))
-        
-        #risk_black = s_part[black].mean()
-        #risk_white = s_part[~black].mean()
-        
-        start, stop = a.get_xlim()
-        
-        #a.plot([start, (stop + start) / 2], [risk_black, risk_black], 'k--')
-        #a.plot([(stop + start) / 2, stop], [risk_white, risk_white], 'k--', label='10-year prevalence')
-
-        a.set_title(lbl + ' on %s' % part.capitalize())
-        a.set_ylabel('Predicted 10-year risk')
-
-        lgnd = a.legend()
-        
-        lgnd.get_texts()[0].set_text('Black')
-        lgnd.get_texts()[1].set_text('White')
-
-plt.tight_layout()
-plt.savefig('../figures/predictive_distributions_by_outcome.pdf')
-plt.show()
-
-
-# # Older stuff
-
-# In[26]:
-
-
-# add difference between black and white
-
-for col in ['ci_ipcw_10', 'brier_score_10', 'onecal_10_slope', 'onecal_10_intercept']:
-    df[col + '_delta'] = df[col + '_black'] - df[col + '_white']
-    bdf[col + '_delta'] = bdf[col + '_black'] - bdf[col + '_white']
-
-
-# In[36]:
-
-
-import seaborn as sns
-
-PART = 'val'
-
-ms = [
-    'avg_U_surv',
-    'ci_ipcw_10_all', 'ci_ipcw_10_delta',
-    'brier_score_10_all', 'brier_score_10_delta',
-    'onecal_10_slope_all', 'onecal_10_slope_black', 'onecal_10_slope_white',
-    'onecal_10_intercept_all', 'onecal_10_intercept_black', 'onecal_10_intercept_white',
-    'onecal_10_pval_all', 'onecal_10_pval_black', 'onecal_10_pval_white'
-]
-
-titles = [
-    'Mean $U$ stat: 0.5 is demographic parity',
-    'Concordance index: higher is better',
-    '$\Delta$CI (Black - White): higher favors black',
-    'Brier score: lower is better',
-    '$\Delta$BS (Black - White): lower favors black',
-    'Calibration slope: 1 is best',
-    'Calibration slope, black only',
-    'Calibration slope, white only',
-    'Calibration intercept: 0 is best',
-    'Calibration intercept, black only',
-    'Calibration intercept, white only',
-    'Calibration p-value: above 0.05 is adequate',
-    'Calibration p-value, black only',
-    'Calibration p-value, white only'
-]
-
-hps = ['lambda_mmd', 'lambda_l2']#, 'learning_rate']#'early_stopping_criterion']
-
-fig, axs = plt.subplots(
-    nrows=len(ms), ncols=len(hps),
-    sharex=False, sharey=False,
-    figsize=(len(hps) * 6, len(ms) * 4)
-)
-
-frame = df[
-    (df['part'] == PART) &\
-    (df['ci_ipcw_10_all'] > .7) &\
-    (df['onecal_10_intercept_all'].abs() < .2) &\
-    (df['onecal_10_slope_all'].abs() < 2) & \
-    (df['early_stopping_criterion'] == 1) & \
-    (df['lambda_mmd'] < 10000)
-].copy()
-
-for m, ax, title in zip(ms, axs, titles):
-    for hp, a in zip(hps, ax):
-        if hp in ['lambda_mmd', 'early_stopping_criterion']:
-            sns.boxplot(x=frame[hp], y=frame[m], ax=a)
-            bl_val = bdf[bdf['part'] == PART][m].max()
-            a.plot(a.get_xlim(), [bl_val, bl_val], 'k--', label='Cox models')
-        else:
-            sns.scatterplot(x=frame[hp], y=frame[m], ax=a)
-            a.set_xscale('log')
-            bl_val = bdf[bdf['part'] == PART][m].max()
-            a.plot([frame[hp].min(), frame[hp].max()], [bl_val, bl_val], 'k--', label='Cox models')
-        a.set_xlabel(hp)
-        a.set_ylabel(m)
-        a.legend()
-        a.set_title(title)
-plt.tight_layout()
-plt.savefig(PART + '_results.pdf')
-plt.show()
-
-
-# In[37]:
-
-
-import seaborn as sns
-
-PART = 'test'
-
-ms = [
-    'avg_U_surv',
-    'ci_ipcw_10_all', 'ci_ipcw_10_delta',
-    'brier_score_10_all', 'brier_score_10_delta',
-    'onecal_10_slope_all', 'onecal_10_slope_black', 'onecal_10_slope_white',
-    'onecal_10_intercept_all', 'onecal_10_intercept_black', 'onecal_10_intercept_white',
-    'onecal_10_pval_all', 'onecal_10_pval_black', 'onecal_10_pval_white'
-]
-
-titles = [
-    'Mean $U$ stat: 0.5 is demographic parity',
-    'Concordance index: higher is better',
-    '$\Delta$CI (Black - White): higher favors black',
-    'Brier score: lower is better',
-    '$\Delta$BS (Black - White): lower favors black',
-    'Calibration slope: 1 is best',
-    'Calibration slope, black only',
-    'Calibration slope, white only',
-    'Calibration intercept: 0 is best',
-    'Calibration intercept, black only',
-    'Calibration intercept, white only',
-    'Calibration p-value: above 0.05 is adequate',
-    'Calibration p-value, black only',
-    'Calibration p-value, white only'
-]
-
-hps = ['lambda_mmd', 'lambda_l2']#, 'learning_rate']#'early_stopping_criterion']
-
-fig, axs = plt.subplots(
-    nrows=len(ms), ncols=len(hps),
-    sharex=False, sharey=False,
-    figsize=(len(hps) * 6, len(ms) * 4)
-)
-
-frame = df[
-    (df['part'] == PART) &\
-    (df['ci_ipcw_10_all'] > .7) &\
-    (df['onecal_10_intercept_all'].abs() < .2) &\
-    (df['onecal_10_slope_all'].abs() < 2) & \
-    (df['early_stopping_criterion'] == 1) & \
-    (df['lambda_mmd'] < 10000)
-].copy()
-
-for m, ax, title in zip(ms, axs, titles):
-    for hp, a in zip(hps, ax):
-        if hp in ['lambda_mmd', 'early_stopping_criterion']:
-            sns.boxplot(x=frame[hp], y=frame[m], ax=a)
-            bl_val = bdf[bdf['part'] == PART][m].max()
-            a.plot(a.get_xlim(), [bl_val, bl_val], 'k--', label='Cox models')
-        else:
-            sns.scatterplot(x=frame[hp], y=frame[m], ax=a)
-            a.set_xscale('log')
-            bl_val = bdf[bdf['part'] == PART][m].max()
-            a.plot([frame[hp].min(), frame[hp].max()], [bl_val, bl_val], 'k--', label='Cox models')
-        a.set_xlabel(hp)
-        a.set_ylabel(m)
-        a.legend()
-        a.set_title(title)
-plt.tight_layout()
-plt.savefig(PART + '_results.pdf')
-plt.show()
-
-
-# In[43]:
-
-
-import seaborn as sns
-
-PART = 'regards'
-
-ms = [
-    'avg_U_surv',
-    'ci_ipcw_10_all', 'ci_ipcw_10_delta',
-    'brier_score_10_all', 'brier_score_10_delta',
-    'onecal_10_slope_all', 'onecal_10_slope_black', 'onecal_10_slope_white',
-    'onecal_10_intercept_all', 'onecal_10_intercept_black', 'onecal_10_intercept_white',
-    'onecal_10_pval_all', 'onecal_10_pval_black', 'onecal_10_pval_white'
-]
-
-titles = [
-    'Mean $U$ stat: 0.5 is demographic parity',
-    'Concordance index: higher is better',
-    '$\Delta$CI (Black - White): higher favors black',
-    'Brier score: lower is better',
-    '$\Delta$BS (Black - White): lower favors black',
-    'Calibration slope: 1 is best',
-    'Calibration slope, black only',
-    'Calibration slope, white only',
-    'Calibration intercept: 0 is best',
-    'Calibration intercept, black only',
-    'Calibration intercept, white only',
-    'Calibration p-value: above 0.05 is adequate',
-    'Calibration p-value, black only',
-    'Calibration p-value, white only'
-]
-
-hps = ['lambda_mmd', 'lambda_l2']#, 'learning_rate']#'early_stopping_criterion']
-
-fig, axs = plt.subplots(
-    nrows=len(ms), ncols=len(hps),
-    sharex=False, sharey=False,
-    figsize=(len(hps) * 6, len(ms) * 4)
-)
-
-frame = df[
-    (df['part'] == PART) &\
-    (df['ci_ipcw_10_all'] > .62) &\
-    (df['onecal_10_intercept_all'].abs() < .2) &\
-    (df['onecal_10_slope_all'].abs() < 2) & \
-    (df['early_stopping_criterion'] == 1) & \
-    (df['lambda_mmd'] < 10000)
-].copy()
-
-for m, ax, title in zip(ms, axs, titles):
-    for hp, a in zip(hps, ax):
-        if hp in ['lambda_mmd', 'early_stopping_criterion']:
-            sns.boxplot(x=frame[hp], y=frame[m], ax=a)
-            bl_val = bdf[bdf['part'] == PART][m].max()
-            a.plot(a.get_xlim(), [bl_val, bl_val], 'k--', label='Cox models')
-        else:
-            sns.scatterplot(x=frame[hp], y=frame[m], ax=a)
-            a.set_xscale('log')
-            bl_val = bdf[bdf['part'] == PART][m].max()
-            a.plot([frame[hp].min(), frame[hp].max()], [bl_val, bl_val], 'k--', label='Cox models')
-        a.set_xlabel(hp)
-        a.set_ylabel(m)
-        a.legend()
-        a.set_title(title)
-plt.tight_layout()
-plt.savefig(PART + '_results.pdf')
-plt.show()
-
-
-# In[11]:
-
-
-def gridplot(m1, m2, xlim=None, ylim=None):
-    fig, axs = plt.subplots(nrows=3, ncols=3, figsize=(16, 16), sharex='all', sharey='all')
-    for ax, part in zip(axs, ['val', 'test', 'regards']):
-        for a, group in zip(ax, ['all', 'black', 'white']):
-            m1_col = m1 + '_' + group
-            m2_col = m2 + '_' + group
-            a.scatter(df[m1_col][df['part'] == part], df[m2_col][df['part'] == part])
-            a.scatter(bdf[m1_col][bdf['part'] == part], bdf[m2_col][bdf['part'] == part])
-            a.set_title(group + ' in ' + part + ' set', fontsize=16)
-            a.set_xlabel(m1, fontsize=16)
-            a.set_ylabel(m2, fontsize=16)
-    if xlim is not None:
-        axs[0, 0].set_xlim(xlim)
-    if xlim is not None:
-        axs[0, 0].set_ylim(ylim)
-    plt.tight_layout()
-    plt.show()
-
-
-# In[12]:
-
-
-gridplot('ci_ipcw_10', 'onecal_10_slope', xlim=[.6, .8], ylim=[-1, 3])
-
-
-# In[13]:
-
-
-gridplot('ci_ipcw_10', 'onecal_10_intercept', xlim=[0.6, 0.8], ylim=[-.2, .2])
-
-
-# In[ ]:
-
-
-
-
