@@ -342,7 +342,6 @@ for a, part, slbl in zip(ax, ['test', 'regards'], set_labels):
         fig1_summary.append({
             'set': part,
             'mdl_idx': idx,
-            'mdl_prefix': prefix,
             'mdl_lbl': lbl,
             'mdl_dir': mdir,
             'mean_bb': estimates[0],
