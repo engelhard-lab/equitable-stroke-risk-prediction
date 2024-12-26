@@ -31,7 +31,7 @@ def main():
 
     # Load data (needed to calculate performance)
 
-    data = load_stroke_data(DATA_PATH)
+    data = load_stroke_data(DATA_PATH, return_selection_set_as_val=True)
 
     # # code non-stroke events as censoring
 
@@ -247,7 +247,7 @@ def evaluate_run_performance(s_train, t_train, s_test, t_test, surv_10yr):
     return results
 
 
-def eval_by_run_idx(data, idx, results_dir, run_prefix='', part='val', bootstrap_seed=None):
+def eval_by_run_idx(data, idx, results_dir, part=None, bootstrap_seed=None):
     
     ## assumes pred year is the final year (which *should* be year 10)
 
@@ -261,7 +261,7 @@ def eval_by_run_idx(data, idx, results_dir, run_prefix='', part='val', bootstrap
     surv_10yr = np.load(
         os.path.join(
             results_dir,
-            run_prefix + 'run_%i_%s_surv_10yr.npy' % (idx, part)
+            'run_%i_%s_surv_10yr.npy' % (idx, part)
         )
     )
     

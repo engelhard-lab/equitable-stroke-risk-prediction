@@ -101,7 +101,7 @@ def get_predictors(include_race=True):
     return numeric_predictors, categorical_predictors
 
 
-def load_stroke_data(filename, include_race=True):
+def load_stroke_data(filename, return_selection_set_as_val=False, include_race=True):
     
     # df = pd.read_csv(
     #     '../datasets/stroke_risk_ads_v4i.csv'
@@ -161,8 +161,15 @@ def load_stroke_data(filename, include_race=True):
         .sample(frac=1., random_state=2022)
     )
 
-    val_idx = int(len(frame) * .6)
-    test_idx = int(len(frame) * .8)
+    if return_selection_set_as_val:
+
+        val_idx = int(len(frame) * .8)
+        test_idx = int(len(frame) * .9)
+
+    else:
+
+        val_idx = int(len(frame) * .6)
+        test_idx = int(len(frame) * .8)
 
     train_frame = frame[:val_idx]
     val_frame = frame[val_idx:test_idx]
