@@ -4,10 +4,7 @@
 import sys, os
 import warnings
 
-warnings.filterwarnings(
-    'ignore',
-    module='lifelines'
-)
+warnings.filterwarnings('once')
 
 from load_stroke_data import load_stroke_data
 
