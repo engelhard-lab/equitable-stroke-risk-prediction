@@ -28,7 +28,7 @@ def main():
 
     # Load data (needed to calculate performance)
 
-    data = load_stroke_data(DATA_PATH, return_selection_set_as_val=True)
+    data = load_stroke_data(DATA_PATH)
 
     # # code non-stroke events as censoring
 
