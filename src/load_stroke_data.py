@@ -101,7 +101,7 @@ def get_predictors(include_race=True):
     return numeric_predictors, categorical_predictors
 
 
-def load_stroke_data(filename, include_race=True):
+def load_stroke_data(filename, include_race=True, competing_risks=False):
     
     # df = pd.read_csv(
     #     '../datasets/stroke_risk_ads_v4i.csv'
@@ -191,7 +191,7 @@ def load_stroke_data(filename, include_race=True):
             return (f.values for f in ([train_frame] + val_frames))
         
         ohe = (
-            OneHotEncoder(sparse=False, handle_unknown='ignore')
+            OneHotEncoder(sparse_output=False, handle_unknown='ignore')
             .fit(train_frame[categorical_predictors].values)
         )
 
@@ -224,9 +224,13 @@ def load_stroke_data(filename, include_race=True):
         ((X - Xtr_mean) / Xtr_std)
         for X in [X_train, X_val, X_test, X_regards]
     )
-    
-    s_col = 'stroke12_cr1'
-    t_col = 't2stroke12_cr1'
+
+    if competing_risks:
+        s_col = 'stroke12_cr1'
+        t_col = 't2stroke12_cr1'
+    else:
+        s_col = 'stroke12'
+        t_col = 't2stroke12'
     
     s_train, s_val, s_test, s_regards = (
         fr[s_col].values
