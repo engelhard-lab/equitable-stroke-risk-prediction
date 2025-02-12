@@ -60,7 +60,11 @@ def main():
     )
 
 
-def calculate_performance_measures(data, results_dir, limit=None):
+def calculate_performance_measures(
+    data, results_dir,
+    limit=None, competing_risks=False,
+    summary_filename='performance_summary.csv'
+):
 
     print()
     print('Calculating performance for models in %s' % results_dir)
@@ -89,7 +93,8 @@ def calculate_performance_measures(data, results_dir, limit=None):
                     data,
                     i,
                     results_dir,
-                    part=part
+                    part=part,
+                    competing_risks=competing_risks
                 )
             }
 
@@ -99,7 +104,7 @@ def calculate_performance_measures(data, results_dir, limit=None):
             results.append(results_dict)
             
     pd.DataFrame(results).to_csv(
-        os.path.join(results_dir, 'performance_summary.csv'),
+        os.path.join(results_dir, summary_filename),
         index=False)
 
 
@@ -197,7 +202,12 @@ def one_calibration(
     return np.array(times), np.array(hs_stats), np.array(p_vals)
 
 
-def evaluate_run_performance(s_train, t_train, s_test, t_test, surv_10yr):
+def evaluate_run_performance(
+    s_train, t_train,
+    s_test, t_test,
+    surv_10yr,
+    competing_risks=False
+):
 
     results = {}
 
@@ -216,7 +226,7 @@ def evaluate_run_performance(s_train, t_train, s_test, t_test, surv_10yr):
         [10],
         n_cal_bins=10,
         return_curves=True,
-        competing_risks=True
+        competing_risks=competing_risks
     )
 
     for t, c, p, op, ep in zip(times, chisq, pval, observed, expected):
@@ -244,7 +254,11 @@ def evaluate_run_performance(s_train, t_train, s_test, t_test, surv_10yr):
     return results
 
 
-def eval_by_run_idx(data, idx, results_dir, part=None, bootstrap_seed=None):
+def eval_by_run_idx(
+    data, idx, results_dir,
+    part=None, bootstrap_seed=None,
+    competing_risks=False
+):
     
     ## assumes pred year is the final year (which *should* be year 10)
 
@@ -294,7 +308,8 @@ def eval_by_run_idx(data, idx, results_dir, part=None, bootstrap_seed=None):
         new_results = evaluate_run_performance(
             data['s_train'], data['t_train'],
             s_part[subset_mask], t_part[subset_mask],
-            surv_10yr[subset_mask]
+            surv_10yr[subset_mask],
+            competing_risks=competing_risks
         )
         
         results = {**results, **{(k + '_' + subset_names[subset_idx]): v for k, v in new_results.items()}}
